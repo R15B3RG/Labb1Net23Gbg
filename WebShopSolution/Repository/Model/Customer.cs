@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Model
 {
-    internal class Customer
+    public class Customer
     {
     }
 }
