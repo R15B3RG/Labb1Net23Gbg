@@ -1,32 +1,75 @@
-using Moq;
+using FakeItEasy;
+using Microsoft.EntityFrameworkCore;
+using Repository.Data;
+using Repository.Model;
 using WebShop.Notifications;
+using WebShop.UnitOfWork;
+using Xunit;
 
-namespace WebShop.Tests
+public class UnitOfWorkTest
 {
-    public class UnitOfWorkTests
+    private readonly DbContextOptions<MyDbContext> _options;
+
+    public UnitOfWorkTest()
     {
-        [Fact]
-        public void NotifyProductAdded_CallsObserverUpdate()
+        _options = new DbContextOptionsBuilder<MyDbContext>()
+            .UseInMemoryDatabase(databaseName: "WebShopTestDb")
+            .Options;
+    }
+
+    [Fact]
+    public void ProductsRepository_CanAddAndRetrieveProduct()
+    {
+        // Arrange
+        var fakeSubject = A.Fake<ProductSubject>();
+
+        using (var context = new MyDbContext(_options))
         {
-            // Arrange
-            var product = new Product { Id = 1, Name = "Test" };
-
-            // Skapar en mock av INotificationObserver
-            var mockObserver = new Mock<INotificationObserver>();
-
-            // Skapar en instans av ProductSubject och lägger till mock-observatören
-            var productSubject = new ProductSubject();
-            productSubject.Attach(mockObserver.Object);
-
-            // Injicerar vårt eget ProductSubject i UnitOfWork
-            var unitOfWork = new UnitOfWork.UnitOfWork(productSubject);
+            var unitOfWork = new UnitOfWork(context, fakeSubject);
+            var product = new Product { Name = "TestProduct", Price = 50, Stock = 5 };
 
             // Act
-            unitOfWork.NotifyProductAdded(product);
+            unitOfWork.Products.Add(product);
+            unitOfWork.Save();
+
+            var retrievedProduct = unitOfWork.Products.Get(product.Id);
 
             // Assert
-            // Verifierar att Update-metoden kallades på vår mock-observatör
-            mockObserver.Verify(o => o.Update(product), Times.Once);
+            Assert.NotNull(retrievedProduct);
+            Assert.Equal("TestProduct", retrievedProduct.Name);
+        }
+    }
+
+    [Fact]
+    public void ProductsRepository_CanUpdateProductStock()
+    {
+        // Arrange
+        var fakeSubject = A.Fake<ProductSubject>();
+
+        using (var context = new MyDbContext(_options))
+        {
+            var unitOfWork = new UnitOfWork(context, fakeSubject);
+            var product = new Product { Name = "TestProduct", Price = 50, Stock = 5 };
+            unitOfWork.Products.Add(product);
+            unitOfWork.Save();
+
+            // Act
+            unitOfWork.Products.UpdateProductStock(product, 10);
+            unitOfWork.Save();
+
+            var updatedProduct = unitOfWork.Products.Get(product.Id);
+
+            // Assert
+            Assert.NotNull(updatedProduct);
+            Assert.Equal(15, updatedProduct.Stock);
         }
     }
 }
+
+
+
+
+
+
+
+
