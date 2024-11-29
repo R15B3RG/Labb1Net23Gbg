@@ -20,11 +20,11 @@ builder.Services.AddControllers();
 builder.Services.AddTransient<INotificationObserver, EmailNotification>();
 
 // Swagger/OpenAPI-konfiguration
-if (builder.Environment.IsDevelopment())
-{
+//if (builder.Environment.IsDevelopment())
+//{
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
-}
+//}
 
 // Lägg till DbContext
 builder.Services.AddDbContext<MyDbContext>(options =>
@@ -32,12 +32,19 @@ builder.Services.AddDbContext<MyDbContext>(options =>
 
 var app = builder.Build();
 
-// Konfigurera HTTP request pipeline
-if (app.Environment.IsDevelopment())
+// Apply migrations on startup
+using (var scope = app.Services.CreateScope())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+    dbContext.Database.Migrate();
 }
+
+// Konfigurera HTTP request pipelinecd 
+//if (app.Environment.IsDevelopment())
+//{
+app.UseSwagger();
+app.UseSwaggerUI();
+//}
 
 app.UseHttpsRedirection();
 app.UseAuthentication(); // Lägg till om du använder autentisering

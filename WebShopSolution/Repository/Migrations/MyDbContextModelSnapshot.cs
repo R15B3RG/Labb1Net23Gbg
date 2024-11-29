@@ -39,6 +39,31 @@ namespace Repository.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("Repository.Model.Customer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Customers");
+                });
+
             modelBuilder.Entity("Repository.Model.Order", b =>
                 {
                     b.Property<int>("OrderId")
@@ -53,7 +78,14 @@ namespace Repository.Migrations
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("ParentOrderId")
+                        .HasColumnType("int");
+
                     b.HasKey("OrderId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ParentOrderId");
 
                     b.ToTable("Orders");
                 });
@@ -96,30 +128,35 @@ namespace Repository.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("int");
-
                     b.Property<double>("Price")
                         .HasColumnType("float");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
-
-                    b.HasIndex("OrderId");
 
                     b.ToTable("Products");
                 });
 
             modelBuilder.Entity("Repository.Model.Order", b =>
                 {
-                    b.HasOne("Repository.Model.Order", "OrderObject")
+                    b.HasOne("Repository.Model.Customer", "Customer")
                         .WithMany("Orders")
-                        .HasForeignKey("OrderId")
+                        .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("OrderObject");
+                    b.HasOne("Repository.Model.Order", "ParentOrder")
+                        .WithMany("SubOrders")
+                        .HasForeignKey("ParentOrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("ParentOrder");
                 });
 
             modelBuilder.Entity("Repository.Model.OrderItem", b =>
@@ -149,10 +186,6 @@ namespace Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Repository.Model.Order", null)
-                        .WithMany("Products")
-                        .HasForeignKey("OrderId");
-
                     b.Navigation("Category");
                 });
 
@@ -161,13 +194,16 @@ namespace Repository.Migrations
                     b.Navigation("Products");
                 });
 
+            modelBuilder.Entity("Repository.Model.Customer", b =>
+                {
+                    b.Navigation("Orders");
+                });
+
             modelBuilder.Entity("Repository.Model.Order", b =>
                 {
                     b.Navigation("OrderItems");
 
-                    b.Navigation("Orders");
-
-                    b.Navigation("Products");
+                    b.Navigation("SubOrders");
                 });
 #pragma warning restore 612, 618
         }
